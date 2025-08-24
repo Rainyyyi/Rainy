@@ -1,1 +1,28 @@
-<p>你好</p>
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>Rainy</title>
+    </head>
+<body>
+    <p>你好呀</p>
+    <button onclick="myFunction()">点我试一试呀</button>
+    <script>
+    function myFunction()
+    {
+        document.getElementById("demo").innerHTML="誰是这世界上最美的人呀？";
+    }
+    </script>
+    <button onclick="answer()">点我看答案鸭</button>
+    <script>
+    function answer()
+    {
+        document.getElementById("an").innerHTML="当然是这个网页的主人啦，嘻嘻";
+    }
+    </script>
+    <p id="demo"></p>
+    <p></p>
+    <p id="an"></p>
+</body>
+</html> 
