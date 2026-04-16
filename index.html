@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>课程管理平台 | 在线学习系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f4f7fc;
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        #root { min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* ===== 交互增强 hover 样式 ===== */
+        .enhanced-submit:hover {
+            background-color: #1f5e7a !important;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15) !important;
+        }
+        .enhanced-learn:hover {
+            background-color: #d4e2fc !important;
+            transform: scale(1.02);
+        }
+        .enhanced-edit:hover {
+            background-color: #bae6fd !important;
+            transform: scale(1.05);
+        }
+        .enhanced-delete:hover {
+            background-color: #f8b4b4 !important;
+            transform: scale(1.05);
+        }
+        .card-enhanced:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15) !important;
+            border-color: #bdd9f0 !important;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #2c7da0 !important;
+            box-shadow: 0 0 0 3px rgba(44,125,160,0.2) !important;
+            outline: none;
+        }
+        .filter-btn:hover {
+            background-color: #f1f5f9 !important;
+            border-color: #94a3b8 !important;
+        }
+
+        /* ===== Toast 通知样式 ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease, fadeOut 0.4s ease 2.2s forwards;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 320px;
+        }
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.info    { border-left: 4px solid #3b82f6; }
+        .toast.warn    { border-left: 4px solid #f59e0b; }
+        @keyframes slideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to   { opacity: 0; transform: translateX(60px); }
+        }
+
+        /* ===== 统计面板样式 ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 18px;
+            padding: 1.1rem 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border: 1px solid #eef2f6;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-icon {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .stat-num {
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #0f2b3d;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        /* ===== 搜索高亮 ===== */
+        mark.highlight {
+            background: #fef08a;
+            color: #78350f;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+
+        /* ===== 分类选择器样式 ===== */
+        .category-select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            outline: none;
+            font-family: inherit;
+            cursor: pointer;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        /* ===== 进度条动画 ===== */
+        .progress-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #2c7da0, #38bdf8);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/babel-standalone/7.22.17/babel.min.js"></script>
+
+<script type="text/babel">
+// ============================================================
+//  课程管理平台 — 完整升级版
+//  新增 Hooks：useEffect / useRef / useMemo / useCallback
+//  自定义 Hook：useLocalStorage / useDebounce / useToast
+//  功能：localStorage 持久化、防抖搜索、自动聚焦、统计面板
+//         课程搜索、编辑课程、Toast 通知
+// ============================================================
+
+const {
+    useState, useEffect, useRef, useMemo, useCallback, useReducer
+} = React;
+
+// ============================================================
+//  ✦ 自定义 Hook 1：useLocalStorage
+//  封装 localStorage 读写，让 state 自动与本地存储同步
+// ============================================================
+function useLocalStorage(key, initialValue) {
+    // 初始化：优先从 localStorage 读取，读不到则用 initialValue
+    const [storedValue, setStoredValue] = useState(() => {
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+        } catch (err) {
+            console.warn('[useLocalStorage] 读取失败:', err);
+            return initialValue;
+        }
+    });
+
+    // 每次 storedValue 变化时，自动写入 localStorage
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(key, JSON.stringify(storedValue));
+        } catch (err) {
+            console.warn('[useLocalStorage] 写入失败:', err);
+        }
+    }, [key, storedValue]);
+
+    return [storedValue, setStoredValue];
+}
+
+// ============================================================
+//  ✦ 自定义 Hook 2：useDebounce
+//  对高频变化的值做防抖处理，减少不必要的重渲染/计算
+// ============================================================
+function useDebounce(value, delay = 300) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        // 清理函数：组件卸载或 value/delay 变化时清除旧定时器
+        return () => clearTimeout(timer);
+    }, [value, delay]);
+
+    return debouncedValue;
+}
+
+// ============================================================
+//  ✦ 自定义 Hook 3：useToast
+//  Toast 通知管理，替代 alert() 提供更好的用户体验
+// ============================================================
+function useToast() {
+    const [toasts, setToasts] = useState([]);
+
+    const showToast = useCallback((message, type = 'success', duration = 2600) => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, duration);
+    }, []);
+
+    const ToastContainer = useCallback(() => (
+        <div className="toast-container">
+            {toasts.map(t => {
+                const iconMap = { success: '✅', info: '🎓', warn: '⚠️' };
+                return (
+                    <div key={t.id} className={`toast ${t.type}`}>
+                        <span>{iconMap[t.type] || '💬'}</span>
+                        <span>{t.message}</span>
+                    </div>
+                );
+            })}
+        </div>
+    ), [toasts]);
+
+    return { showToast, ToastContainer };
+}
+
+// ============================================================
+//  初始课程数据（仅在 localStorage 为空时使用）
+// ============================================================
+const STORAGE_KEY = 'zhixue_courses_v2';
+
+const initialCourses = [
+    { id: 1, name: 'React 从入门到精通', description: '全面掌握 React 核心概念，构建现代化前端应用。包含 Hooks、状态管理、路由等实战项目。', category: '前端开发' },
+    { id: 2, name: 'JavaScript 设计模式', description: '深入浅出讲解常见设计模式，提升代码架构能力，写出优雅健壮的 JS 代码。', category: '前端开发' },
+    { id: 3, name: 'CSS 网格与弹性盒布局', description: '系统学习 Flex 和 Grid 布局，轻松实现复杂响应式界面，告别传统浮动布局。', category: '前端开发' },
+    { id: 4, name: 'Python 数据分析', description: '使用 Pandas、NumPy 进行数据处理与分析，掌握数据可视化技能。', category: '数据科学' },
+    { id: 5, name: '机器学习入门', description: '学习机器学习基础算法，包括线性回归、决策树、随机森林等。', category: '数据科学' },
+    { id: 6, name: 'Node.js 后端开发', description: '使用 Express 和 MongoDB 构建 RESTful API 服务端应用。', category: '后端开发' },
+];
+
+const categories = ['全部', '前端开发', '后端开发', '数据科学', '移动开发', '其他'];
+
+const categoryColors = {
+    '前端开发': { bg: '#dbeafe', color: '#1d4ed8', icon: '🖥️' },
+    '后端开发': { bg: '#dcfce7', color: '#15803d', icon: '⚙️' },
+    '数据科学': { bg: '#fef3c7', color: '#b45309', icon: '📊' },
+    '移动开发': { bg: '#fce7f3', color: '#be185d', icon: '📱' },
+    '其他':     { bg: '#f1f5f9', color: '#475569', icon: '📁' },
+};
+const getCategoryStyle = (cat) => categoryColors[cat] || categoryColors['其他'];
+
+// ============================================================
+//  样式对象
+// ============================================================
+const styles = {
+    appContainer: { display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' },
+    header: { background: 'linear-gradient(135deg, #0f2b3d 0%, #1b4f6e 100%)', color: 'white', padding: '2rem 1.5rem', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' },
+    headerContainer: { maxWidth: '1280px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' },
+    logoArea: { display: 'flex', alignItems: 'center', gap: '12px' },
+    logoIcon: { fontSize: '2.2rem', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' },
+    title: { fontSize: '1.8rem', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 },
+    subtitle: { fontSize: '1rem', opacity: 0.9, background: 'rgba(255,255,255,0.2)', padding: '0.3rem 1rem', borderRadius: '40px', fontWeight: '400' },
+    mainContent: { flex: '1', maxWidth: '1280px', width: '90%', margin: '2rem auto', display: 'flex', flexDirection: 'column', gap: '2rem' },
+    formCard: { backgroundColor: 'white', borderRadius: '24px', padding: '1.8rem 2rem', boxShadow: '0 8px 20px rgba(0,0,0,0.05)', border: '1px solid #eef2f6' },
+    formTitle: { fontSize: '1.4rem', fontWeight: '600', marginBottom: '1.4rem', color: '#0f2b3d', display: 'flex', alignItems: 'center', gap: '10px' },
+    formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' },
+    formGroup: { marginBottom: '1.2rem' },
+    label: { display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#334155', fontSize: '0.88rem' },
+    input: { width: '100%', padding: '0.8rem 1rem', fontSize: '1rem', border: '2px solid #e2e8f0', borderRadius: '16px', outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s', fontFamily: 'inherit' },
+    textarea: { width: '100%', padding: '0.8rem 1rem', fontSize: '1rem', border: '2px solid #e2e8f0', borderRadius: '16px', outline: 'none', fontFamily: 'inherit', resize: 'vertical' },
+    charHint: { fontSize: '0.73rem', color: '#94a3b8', marginTop: '0.35rem', textAlign: 'right' },
+    errorMsg: { color: '#e53e3e', fontSize: '0.8rem', marginTop: '0.4rem', fontWeight: '500' },
+    submitBtn: { backgroundColor: '#2c7da0', color: 'white', border: 'none', borderRadius: '40px', padding: '0.9rem 1.8rem', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', marginTop: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
+    coursesSection: { marginTop: '0.5rem' },
+    sectionHeader: { marginBottom: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' },
+    sectionTitle: { fontSize: '1.5rem', fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' },
+    courseCountBadge: { fontSize: '0.9rem', fontWeight: '600', backgroundColor: '#2c7da0', color: 'white', padding: '0.2rem 0.8rem', borderRadius: '30px' },
+    divider: { height: '4px', width: '70px', backgroundColor: '#2c7da0', borderRadius: '4px', marginTop: '6px' },
+    searchFilterRow: { display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.5rem' },
+    searchBox: { flex: '1', minWidth: '220px', position: 'relative' },
+    searchInput: { width: '100%', padding: '0.7rem 1rem 0.7rem 2.6rem', fontSize: '0.95rem', border: '2px solid #e2e8f0', borderRadius: '40px', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s, box-shadow 0.2s' },
+    searchIcon: { position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '0.9rem', pointerEvents: 'none' },
+    filterSection: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' },
+    filterBtn: { padding: '0.45rem 1rem', border: '2px solid #e2e8f0', borderRadius: '40px', backgroundColor: 'white', color: '#64748b', fontSize: '0.82rem', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' },
+    filterBtnActive: { backgroundColor: '#2c7da0', borderColor: '#2c7da0', color: 'white' },
+    courseListGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.8rem' },
+    card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid #eef2f8', display: 'flex', flexDirection: 'column', height: '100%' },
+    cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem' },
+    courseName: { fontSize: '1.25rem', fontWeight: '700', color: '#0f2b3d', margin: 0, lineHeight: 1.4, flex: 1 },
+    actionBtns: { display: 'flex', gap: '8px', flexShrink: 0 },
+    iconBtn: (bg, color) => ({ backgroundColor: bg, border: 'none', color, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem', flexShrink: 0 }),
+    categoryTag: { display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '0.22rem 0.7rem', borderRadius: '20px', fontSize: '0.73rem', fontWeight: '600', marginBottom: '0.5rem' },
+    description: { color: '#475569', lineHeight: '1.55', margin: '0.5rem 0 1rem 0', fontSize: '0.93rem', flex: '1' },
+    cardActions: { marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+    learnBtn: { backgroundColor: '#eef2ff', border: 'none', padding: '0.55rem 1.1rem', borderRadius: '40px', fontWeight: '600', fontSize: '0.83rem', color: '#1e40af', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '5px' },
+    emptyContainer: { textAlign: 'center', padding: '3rem 2rem', backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', border: '1px dashed #cbd5e1' },
+    emptyText: { fontSize: '1.1rem', color: '#64748b', marginTop: '0.5rem' },
+    footer: { backgroundColor: '#eef2f6', padding: '1.5rem', textAlign: 'center', marginTop: '2rem', borderTop: '1px solid #dce5ec' },
+    footerText: { color: '#4a5568', fontSize: '0.85rem' },
+    modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+    modalContent: { backgroundColor: 'white', borderRadius: '24px', padding: '2rem', width: '90%', maxWidth: '500px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
+    modalTitle: { fontSize: '1.4rem', fontWeight: '600', marginBottom: '1.4rem', color: '#0f2b3d', display: 'flex', alignItems: 'center', gap: '10px' },
+    modalActions: { display: 'flex', gap: '1rem', marginTop: '1.5rem' },
+    cancelBtn: { flex: 1, padding: '0.8rem', border: '2px solid #e2e8f0', borderRadius: '40px', backgroundColor: 'white', color: '#64748b', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' },
+    saveBtn: { flex: 1, padding: '0.8rem', border: 'none', borderRadius: '40px', backgroundColor: '#2c7da0', color: 'white', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' },
+};
+
+// ============================================================
+//  工具函数：关键词高亮
+// ============================================================
+function HighlightText({ text, keyword }) {
+    if (!keyword || !keyword.trim()) return <span>{text}</span>;
+    const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return (
+        <span>
+            {parts.map((part, i) =>
+                regex.test(part)
+                    ? <mark key={i} className="highlight">{part}</mark>
+                    : <span key={i}>{part}</span>
+            )}
+        </span>
+    );
+}
+
+// ============================================================
+//  Header 组件
+// ============================================================
+const Header = React.memo(() => (
+    <header style={styles.header}>
+        <div style={styles.headerContainer}>
+            <div style={styles.logoArea}>
+                <i className="fas fa-graduation-cap" style={styles.logoIcon}></i>
+                <h1 style={styles.title}>智学课程中心</h1>
+            </div>
+            <p style={styles.subtitle}>探索 · 成长 · 卓越</p>
+        </div>
+    </header>
+));
+
+// ============================================================
+//  统计面板组件
+// ============================================================
+const StatsPanel = React.memo(({ courses, filteredCount }) => {
+    // useMemo 缓存各分类统计，courses 不变时不重新计算
+    const stats = useMemo(() => {
+        const total = courses.length;
+        const catMap = {};
+        categories.forEach(c => {
+            if (c !== '全部') catMap[c] = 0;
+        });
+        courses.forEach(c => {
+            const key = catMap.hasOwnProperty(c.category) ? c.category : '其他';
+            catMap[key]++;
+        });
+        return { total, catMap };
+    }, [courses]);
+
+    const statItems = [
+        { label: '全部课程', value: stats.total, icon: '📚', iconBg: '#dbeafe', iconColor: '#1d4ed8' },
+        { label: '搜索结果', value: filteredCount, icon: '🔍', iconBg: '#dcfce7', iconColor: '#15803d' },
+        { label: '前端开发', value: stats.catMap['前端开发'] || 0, icon: '🖥️', iconBg: '#dbeafe', iconColor: '#1d4ed8' },
+        { label: '后端开发', value: stats.catMap['后端开发'] || 0, icon: '⚙️', iconBg: '#dcfce7', iconColor: '#15803d' },
+        { label: '数据科学', value: stats.catMap['数据科学'] || 0, icon: '📊', iconBg: '#fef3c7', iconColor: '#b45309' },
+        { label: '移动开发', value: stats.catMap['移动开发'] || 0, icon: '📱', iconBg: '#fce7f3', iconColor: '#be185d' },
+    ];
+
+    return (
+        <div>
+            <h2 style={{...styles.sectionTitle, fontSize: '1.15rem', marginBottom: '0.9rem', color: '#64748b', fontWeight: '500'}}>
+                <i className="fas fa-chart-bar" style={{marginRight: '6px', color: '#2c7da0'}}></i>
+                课程统计
+            </h2>
+            <div className="stats-grid">
+                {statItems.map(item => (
+                    <div key={item.label} className="stat-card">
+                        <div className="stat-icon" style={{background: item.iconBg, color: item.iconColor}}>
+                            {item.icon}
+                        </div>
+                        <div>
+                            <div className="stat-num">{item.value}</div>
+                            <div className="stat-label">{item.label}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+});
+
+// ============================================================
+//  CourseCard 组件
+//  onDelete / onLearn / onEdit 均由 App 通过 useCallback 传入
+// ============================================================
+const CourseCard = React.memo(({ course, onDelete, onLearn, onEdit, searchKeyword }) => {
+    const catStyle = getCategoryStyle(course.category);
+
+    const handleDelete = useCallback(() => {
+        if (window.confirm(`确定要删除课程《${course.name}》吗？`)) {
+            onDelete(course.id);
+        }
+    }, [course.id, course.name, onDelete]);
+
+    const handleLearn  = useCallback(() => onLearn(course.name),  [course.name, onLearn]);
+    const handleEdit   = useCallback(() => onEdit(course),         [course, onEdit]);
+
+    return (
+        <div style={styles.card} className="card-enhanced">
+            <div style={styles.cardHeader}>
+                <h3 style={styles.courseName}>
+                    <HighlightText text={course.name} keyword={searchKeyword} />
+                </h3>
+                <div style={styles.actionBtns}>
+                    <button
+                        onClick={handleEdit}
+                        style={styles.iconBtn('#e0f2fe', '#0369a1')}
+                        className="enhanced-edit"
+                        title="编辑课程"
+                        aria-label="编辑课程"
+                    >
+                        <i className="fas fa-edit"></i>
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        style={styles.iconBtn('#fee2e2', '#b91c1c')}
+                        className="enhanced-delete"
+                        title="删除课程"
+                        aria-label="删除课程"
+                    >
+                        <i className="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <span style={{...styles.categoryTag, backgroundColor: catStyle.bg, color: catStyle.color}}>
+                {catStyle.icon} {course.category || '其他'}
+            </span>
+
+            <p style={styles.description}>
+                <HighlightText text={course.description} keyword={searchKeyword} />
+            </p>
+
+            <div style={styles.cardActions}>
+                <button onClick={handleLearn} style={styles.learnBtn} className="enhanced-learn">
+                    <i className="fas fa-play" style={{fontSize: '0.78rem'}}></i> 开始学习
+                </button>
+                <span style={{fontSize: '0.75rem', color: '#94a3b8'}}>
+                    ID #{course.id}
+                </span>
+            </div>
+        </div>
+    );
+});
+
+// ============================================================
+//  CourseList 组件
+// ============================================================
+const CourseList = React.memo(({ courses, onDeleteCourse, onLearnCourse, onEditCourse, searchKeyword }) => {
+    if (!courses || courses.length === 0) {
+        return (
+            <div style={styles.emptyContainer}>
+                <div style={{fontSize: '3.5rem', marginBottom: '0.8rem'}}>
+                    {searchKeyword ? '🔍' : '📂'}
+                </div>
+                <p style={styles.emptyText}>
+                    {searchKeyword
+                        ? `没有找到与"${searchKeyword}"相关的课程`
+                        : '暂无课程，去添加一门吧~'}
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div style={styles.courseListGrid}>
+            {courses.map(course => (
+                <CourseCard
+                    key={course.id}
+                    course={course}
+                    onDelete={onDeleteCourse}
+                    onLearn={onLearnCourse}
+                    onEdit={onEditCourse}
+                    searchKeyword={searchKeyword}
+                />
+            ))}
+        </div>
+    );
+});
+
+// ============================================================
+//  Footer 组件
+// ============================================================
+const Footer = React.memo(() => (
+    <footer style={styles.footer}>
+        <p style={styles.footerText}>
+            <i className="far fa-copyright" style={{marginRight: '6px'}}></i>
+            {new Date().getFullYear()} 智学课程平台 · localStorage 持久化 · useEffect / useRef / useMemo / useCallback / 自定义 Hook
+        </p>
+    </footer>
+));
+
+// ============================================================
+//  编辑弹窗组件
+// ============================================================
+const EditModal = React.memo(({ course, onSave, onCancel }) => {
+    const [editName, setEditName]         = useState(course.name);
+    const [editDesc, setEditDesc]         = useState(course.description);
+    const [editCategory, setEditCategory] = useState(course.category || '其他');
+    const [nameErr, setNameErr]           = useState('');
+
+    // useRef：编辑弹窗打开时自动聚焦课程名称输入框
+    const editNameRef = useRef(null);
+    useEffect(() => {
+        if (editNameRef.current) {
+            editNameRef.current.focus();
+            editNameRef.current.select();
+        }
+    }, []);
+
+    const handleSave = () => {
+        const trimmed = editName.trim();
+        if (!trimmed) { setNameErr('课程名称不能为空'); return; }
+        onSave({ ...course, name: trimmed, description: editDesc.trim(), category: editCategory });
+    };
+
+    return (
+        <div style={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onCancel()}>
+            <div style={styles.modalContent}>
+                <h2 style={styles.modalTitle}>
+                    <i className="fas fa-edit" style={{color: '#2c7da0'}}></i>
+                    编辑课程
+                </h2>
+
+                <div style={styles.formGroup}>
+                    <label style={styles.label}>课程名称 <span style={{color:'#e53e3e'}}>*</span></label>
+                    <input
+                        ref={editNameRef}
+                        type="text"
+                        style={{...styles.input, borderColor: nameErr ? '#f56565' : '#e2e8f0'}}
+                        value={editName}
+                        onChange={(e) => { setEditName(e.target.value); if (nameErr) setNameErr(''); }}
+                    />
+                    {nameErr && <p style={styles.errorMsg}>{nameErr}</p>}
+                </div>
+
+                <div style={styles.formGroup}>
+                    <label style={styles.label}>课程简介</label>
+                    <textarea
+                        style={styles.textarea}
+                        rows="3"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                    />
+                    <div style={styles.charHint}>{editDesc.length}/200</div>
+                </div>
+
+                <div style={styles.formGroup}>
+                    <label style={styles.label}>课程分类</label>
+                    <select
+                        className="category-select"
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                    >
+                        {categories.filter(c => c !== '全部').map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={styles.modalActions}>
+                    <button onClick={onCancel} style={styles.cancelBtn}>取消</button>
+                    <button onClick={handleSave} style={styles.saveBtn}>保存修改</button>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+// ============================================================
+//  App 主组件
+// ============================================================
+const App = () => {
+    // ✦ useLocalStorage：课程数据自动持久化到 localStorage
+    const [courses, setCourses] = useLocalStorage(STORAGE_KEY, initialCourses);
+
+    // 表单状态
+    const [newCourseName, setNewCourseName] = useState('');
+    const [newCourseDesc, setNewCourseDesc] = useState('');
+    const [newCourseCategory, setNewCourseCategory] = useState('前端开发');
+    const [nameError, setNameError]         = useState('');
+
+    // 搜索 & 筛选状态（搜索词会经过 useDebounce 防抖）
+    const [searchInput, setSearchInput]       = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('全部');
+
+    // ✦ useDebounce：防抖搜索，300ms 后才触发过滤，避免每次键入都重新计算
+    const debouncedSearch = useDebounce(searchInput, 300);
+
+    // 编辑弹窗状态
+    const [editingCourse, setEditingCourse] = useState(null);
+
+    // Toast 通知
+    const { showToast, ToastContainer } = useToast();
+
+    // ✦ useRef：新增课程后让课程名称输入框自动聚焦
+    const courseNameInputRef = useRef(null);
+
+    // ✦ useEffect：首次加载时，在控制台打印读取到的课程数（用于演示 localStorage 已读取）
+    useEffect(() => {
+        console.log(`[App] 从 localStorage 读取到 ${courses.length} 门课程`);
+    }, []); // 仅首次执行
+
+    // ✦ useMemo：缓存过滤后的课程列表
+    //   只有 courses / debouncedSearch / selectedCategory 变化时才重新计算
+    const filteredCourses = useMemo(() => {
+        const kw = debouncedSearch.trim().toLowerCase();
+        return courses.filter(course => {
+            const matchSearch = !kw
+                || course.name.toLowerCase().includes(kw)
+                || course.description.toLowerCase().includes(kw)
+                || (course.category || '').toLowerCase().includes(kw);
+            const matchCat = selectedCategory === '全部' || course.category === selectedCategory;
+            return matchSearch && matchCat;
+        });
+    }, [courses, debouncedSearch, selectedCategory]);
+
+    // ✦ useMemo：缓存各分类课程数量（用于筛选按钮的 badge）
+    const categoryStats = useMemo(() => {
+        const map = {};
+        categories.forEach(c => {
+            map[c] = c === '全部'
+                ? courses.length
+                : courses.filter(course => course.category === c).length;
+        });
+        return map;
+    }, [courses]);
+
+    // ============ useCallback 优化事件处理函数 ============
+
+    // ✦ useCallback：新增课程
+    const handleAddCourse = useCallback(() => {
+        const trimmedName = newCourseName.trim();
+        if (!trimmedName) {
+            setNameError('课程名称不能为空，请填写课程名称');
+            courseNameInputRef.current && courseNameInputRef.current.focus();
+            return;
+        }
+        const finalDesc = newCourseDesc.trim() || '暂无简介，讲师即将补充精彩内容。';
+        const newCourse = {
+            id: Date.now() + Math.floor(Math.random() * 10000),
+            name: trimmedName,
+            description: finalDesc,
+            category: newCourseCategory,
+        };
+        setCourses(prev => [newCourse, ...prev]);
+        setNewCourseName('');
+        setNewCourseDesc('');
+        setNameError('');
+        showToast(`课程"${trimmedName}"已成功发布！`, 'success');
+
+        // ✦ useRef + useEffect 联动：新增后自动聚焦课程名输入框
+        setTimeout(() => {
+            courseNameInputRef.current && courseNameInputRef.current.focus();
+        }, 50);
+    }, [newCourseName, newCourseDesc, newCourseCategory, setCourses, showToast]);
+
+    // ✦ useCallback：删除课程
+    const handleDeleteCourse = useCallback((courseId) => {
+        setCourses(prev => prev.filter(c => c.id !== courseId));
+        showToast('课程已删除', 'warn');
+    }, [setCourses, showToast]);
+
+    // ✦ useCallback："开始学习"点击
+    const handleLearnCourse = useCallback((courseName) => {
+        showToast(`正在进入《${courseName}》，祝学习愉快！`, 'info');
+    }, [showToast]);
+
+    // ✦ useCallback：打开编辑弹窗
+    const handleEditCourse = useCallback((course) => {
+        setEditingCourse(course);
+    }, []);
+
+    // ✦ useCallback：保存编辑
+    const handleSaveEdit = useCallback((updatedCourse) => {
+        setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+        setEditingCourse(null);
+        showToast(`课程"${updatedCourse.name}"已更新！`, 'success');
+    }, [setCourses, showToast]);
+
+    // ✦ useCallback：取消编辑
+    const handleCancelEdit = useCallback(() => {
+        setEditingCourse(null);
+    }, []);
+
+    // ✦ useCallback：搜索输入变化
+    const handleSearchChange = useCallback((e) => {
+        setSearchInput(e.target.value);
+    }, []);
+
+    // ✦ useCallback：分类筛选切换
+    const handleCategoryChange = useCallback((cat) => {
+        setSelectedCategory(cat);
+    }, []);
+
+    // ✦ useCallback：清空搜索
+    const handleClearSearch = useCallback(() => {
+        setSearchInput('');
+        courseNameInputRef.current && courseNameInputRef.current.focus();
+    }, []);
+
+    // ✦ useCallback：表单字段变化
+    const handleNameChange = useCallback((e) => {
+        setNewCourseName(e.target.value);
+        if (nameError) setNameError('');
+    }, [nameError]);
+
+    const handleDescChange       = useCallback((e) => setNewCourseDesc(e.target.value),       []);
+    const handleCategorySelect   = useCallback((e) => setNewCourseCategory(e.target.value),    []);
+
+    // ✦ useCallback：回车键提交
+    const handleKeyDown = useCallback((e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleAddCourse();
+        }
+    }, [handleAddCourse]);
+
+    // ============ 渲染 ============
+    return (
+        <div style={styles.appContainer}>
+            <Header />
+
+            <main style={styles.mainContent}>
+
+                {/* ===== 统计面板 ===== */}
+                <StatsPanel courses={courses} filteredCount={filteredCourses.length} />
+
+                {/* ===== 新增课程表单 ===== */}
+                <div style={styles.formCard}>
+                    <h2 style={styles.formTitle}>
+                        <i className="fas fa-plus-circle" style={{color: '#2c7da0'}}></i>
+                        创建新课程
+                    </h2>
+
+                    {/* 课程名称 & 分类：两列布局 */}
+                    <div style={styles.formGrid}>
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>
+                                课程名称 <span style={{color: '#e53e3e'}}>*</span>
+                            </label>
+                            <input
+                                ref={courseNameInputRef}
+                                type="text"
+                                style={{...styles.input, borderColor: nameError ? '#f56565' : '#e2e8f0'}}
+                                placeholder="例如：Python 数据分析实战"
+                                value={newCourseName}
+                                onChange={handleNameChange}
+                                onKeyDown={handleKeyDown}
+                            />
+                            {nameError && <p style={styles.errorMsg}><i className="fas fa-exclamation-circle" style={{marginRight:'4px'}}></i>{nameError}</p>}
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>课程分类</label>
+                            <select
+                                className="category-select"
+                                value={newCourseCategory}
+                                onChange={handleCategorySelect}
+                            >
+                                {categories.filter(c => c !== '全部').map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* 课程简介 */}
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>课程简介</label>
+                        <textarea
+                            style={styles.textarea}
+                            rows="3"
+                            placeholder="简要介绍课程内容、学习目标或亮点..."
+                            value={newCourseDesc}
+                            onChange={handleDescChange}
+                        />
+                        <div style={styles.charHint}>{newCourseDesc.length}/200</div>
+                    </div>
+
+                    <button onClick={handleAddCourse} style={styles.submitBtn} className="enhanced-submit">
+                        <i className="fas fa-save"></i> 发布课程
+                    </button>
+                </div>
+
+                {/* ===== 课程列表区域 ===== */}
+                <div style={styles.coursesSection}>
+                    <div style={styles.sectionHeader}>
+                        <div>
+                            <h2 style={styles.sectionTitle}>
+                                <i className="fas fa-list-ul" style={{color: '#2c7da0'}}></i>
+                                全部课程
+                                <span style={styles.courseCountBadge}>{filteredCourses.length}</span>
+                            </h2>
+                            <div style={styles.divider}></div>
+                        </div>
+
+                        {/* 搜索提示 */}
+                        {debouncedSearch && (
+                            <div style={{fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                <i className="fas fa-search"></i>
+                                搜索「{debouncedSearch}」· 找到 {filteredCourses.length} 个结果
+                                <button
+                                    onClick={handleClearSearch}
+                                    style={{border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: '50%', width: '22px', height: '22px', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
+                                    title="清空搜索"
+                                >
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 搜索框 + 分类筛选 */}
+                    <div style={styles.searchFilterRow}>
+                        <div style={styles.searchBox}>
+                            <i className="fas fa-search" style={styles.searchIcon}></i>
+                            <input
+                                type="text"
+                                style={styles.searchInput}
+                                placeholder="搜索课程名称、简介或分类..."
+                                value={searchInput}
+                                onChange={handleSearchChange}
+                            />
+                        </div>
+                        <div style={styles.filterSection}>
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    className="filter-btn"
+                                    onClick={() => handleCategoryChange(cat)}
+                                    style={{
+                                        ...styles.filterBtn,
+                                        ...(selectedCategory === cat ? styles.filterBtnActive : {})
+                                    }}
+                                >
+                                    {cat}
+                                    <span style={{
+                                        marginLeft: '4px',
+                                        background: selectedCategory === cat ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                                        color: selectedCategory === cat ? 'white' : '#64748b',
+                                        borderRadius: '10px',
+                                        padding: '1px 6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '600',
+                                    }}>
+                                        {categoryStats[cat] || 0}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 课程列表 */}
+                    <CourseList
+                        courses={filteredCourses}
+                        onDeleteCourse={handleDeleteCourse}
+                        onLearnCourse={handleLearnCourse}
+                        onEditCourse={handleEditCourse}
+                        searchKeyword={debouncedSearch}
+                    />
+                </div>
+
+            </main>
+
+            <Footer />
+
+            {/* 编辑弹窗 */}
+            {editingCourse && (
+                <EditModal
+                    course={editingCourse}
+                    onSave={handleSaveEdit}
+                    onCancel={handleCancelEdit}
+                />
+            )}
+
+            {/* Toast 通知 */}
+            <ToastContainer />
+        </div>
+    );
+};
+
+// ======================== 渲染应用 ========================
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
